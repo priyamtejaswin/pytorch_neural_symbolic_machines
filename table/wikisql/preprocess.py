@@ -5,13 +5,14 @@ from babel import numbers
 from babel.numbers import parse_decimal, NumberFormatError
 
 import nltk
+# import spacy
 import os
 import unicodedata
 import re
 import time
 
 import nsm
-from nsm import word_embeddings
+from nsm import embedding
 from nsm import data_utils
 
 # import tensorflow as tf  # TF was only being used for cli args.
@@ -29,6 +30,10 @@ parser.add_argument('--raw_input_dir', type=str, default='', help='Input path.')
 parser.add_argument('--processed_input_dir', type=str, default='', help="Path to save processed data.")
 parser.add_argument('--n_train_shard', type=int, default=30, help='.')
 FLAGS = parser.parse_args()
+
+# spaCy tokenizer, because NLTK is causing problems ...
+# from spacy.lang.en import English
+# nlp = English()
 
 
 # Copied from utils to avoid relative import.
@@ -65,7 +70,7 @@ def tokens_contain(string_1, string_2):
 
 # preprocess the questions.
 def string_in_table(string, kg):
-    # print string
+    # print(string)
     for k, node in kg['kg'].iteritems():
         for prop, val in node.iteritems():
             if (isinstance(val[0], str) or isinstance(val[0], unicode)) and string in val[0]:
@@ -154,24 +159,24 @@ def normalize(x):
     x = ''.join(c for c in unicodedata.normalize('NFKD', x)
                 if unicodedata.category(c) != 'Mn')
     # Normalize quotes and dashes
-    x = re.sub(ur"[‘’´`]", "'", x)
-    x = re.sub(ur"[“”]", "\"", x)
-    x = re.sub(ur"[‐‑‒–—−]", "-", x)
+    x = re.sub(u"[‘’´`]", "'", x)
+    x = re.sub(u"[“”]", "\"", x)
+    x = re.sub(u"[‐‑‒–—−]", "-", x)
     while True:
         old_x = x
         # Remove citations
-        x = re.sub(ur"((?<!^)\[[^\]]*\]|\[\d+\]|[•♦†‡*#+])*$", "", x.strip())
+        x = re.sub(u"((?<!^)\[[^\]]*\]|\[\d+\]|[•♦†‡*#+])*$", "", x.strip())
         # Remove details in parenthesis
-        x = re.sub(ur"(?<!^)( \([^)]*\))*$", "", x.strip())
+        x = re.sub(u"(?<!^)( \([^)]*\))*$", "", x.strip())
         # Remove outermost quotation mark
-        x = re.sub(ur'^"([^"]*)"$', r'\1', x.strip())
+        x = re.sub(u'^"([^"]*)"$', r'\1', x.strip())
         if x == old_x:
             break
     # Remove final '.'
     if x and x[-1] == '.':
         x = x[:-1]
     # Collapse whitespaces and convert to lower case
-    x = re.sub(ur'\s+', ' ', x, flags=re.U).lower().strip()
+    x = re.sub(u'\s+', ' ', x, flags=re.U).lower().strip()
     return x
         
 
@@ -277,7 +282,7 @@ def dump_examples(examples, fn):
             f.write(json.dumps(e))
             f.write('\n')
     t2 = time.time()
-    print '{} sec used dumping {} examples.'.format(t2 - t1, len(examples))
+    print('{} sec used dumping {} examples.'.format(t2 - t1, len(examples)))
  
 
 def main(unused_argv):
@@ -327,12 +332,12 @@ def main(unused_argv):
             test_table_dict[_table['id']] = _table
 
     # Collect all the tables.
-    print 'Start collecting all the tables.'
+    print('Start collecting all the tables.')
     kg_dict = {}
     for tb_dict in [dev_table_dict, train_table_dict, test_table_dict]:
         for i, (k, v) in enumerate(tb_dict.iteritems()):
             if i % 1000 == 0:
-                print i
+                print(i)
             kg_dict[k] = table2kg(v)
 
     # Check if the string or number value has the correct type. 
@@ -342,12 +347,12 @@ def main(unused_argv):
                 if prop[-7:] == '-number':
                     for num in val:
                         if not (isinstance(num, int) or isinstance(num, float)):
-                            print kg
+                            print(kg)
                             raise ValueError
                 if prop[-7:] == '-string':
                     for num in val:
                         if not isinstance(num, unicode):
-                            print kg
+                            print(kg)
                             raise ValueError
 
     # Save the tables. 
@@ -384,42 +389,42 @@ def main(unused_argv):
 
     t1 = time.time()
     dev_examples = []
-    print 'start annotating dev examples.'
+    print('start annotating dev examples.')
     for i, q in enumerate(dev_set):
         if i % 500 == 0:
-            print i
+            print(i)
         e = annotate_question(q, 'dev-{}'.format(i), kg_dict, stop_words)
         expand_entities(e, kg_dict)
         dev_examples.append(e)
     t2 = time.time()
-    print '{} sec used annotating dev examples.'.format(t2 - t1)
+    print('{} sec used annotating dev examples.'.format(t2 - t1))
     dump_examples(dev_examples, dev_split_jsonl)
 
     t1 = time.time()
     train_examples = []
-    print 'start annotating train examples.'
+    print('start annotating train examples.')
     for i, q in enumerate(train_set):
         if i % 500 == 0:
-            print i
+            print(i)
         e = annotate_question(q, 'train-{}'.format(i), kg_dict, stop_words)
         expand_entities(e, kg_dict)
         train_examples.append(e)
     t2 = time.time()
-    print '{} sec used annotating train examples.'.format(t2 - t1)
+    print('{} sec used annotating train examples.'.format(t2 - t1))
     dump_examples(train_examples, train_split_jsonl)
 
 
     t1 = time.time()
     test_examples = []
-    print 'start annotating test examples.'
+    print('start annotating test examples.')
     for i, q in enumerate(test_set):
         if i % 500 == 0:
-            print i
+            print(i)
         e = annotate_question(q, 'test-{}'.format(i), kg_dict, stop_words)
         expand_entities(e, kg_dict)
         test_examples.append(e)
     t2 = time.time()
-    print '{} sec used annotating test examples.'.format(t2 - t1)
+    print('{} sec used annotating test examples.'.format(t2 - t1))
     dump_examples(test_examples, test_split_jsonl)
 
     train_shards = []
@@ -448,7 +453,7 @@ def main(unused_argv):
           FLAGS.processed_input_dir, "en_vocab_min_count_{}.json".format(i))
         with open(vocab_file, 'w') as f:
           json.dump(en_vocab.vocab, f, sort_keys=True, indent=2)
-        print 'min_tk_count: {}, vocab size: {}'.format(i, len(en_vocab.vocab))    
+        print('min_tk_count: {}, vocab size: {}'.format(i, len(en_vocab.vocab)))    
 
 
 if __name__ == '__main__':  

@@ -131,6 +131,7 @@ dmypy.json
 # Project files and dirs
 data/wikitable
 data/pytorch_nsm.zip
+data/wikisql
 
 # IDE
 .vscode
