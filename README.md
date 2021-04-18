@@ -1,3 +1,5 @@
+> Forked from [Pytorch Neural Symbolic Machines repo](https://github.com/priyamtejaswin/pytorch_neural_symbolic_machines). I wanted to understand how NSM/program-synthesis is implemented. To that end, I'll be adding support for [WikiSQL](https://github.com/salesforce/WikiSQL) to my fork.
+
 # Pytorch Neural Symbolic Machines
 
 This repository is a Pytorch implementation of Google's [neural symbolic machines](https://github.com/crazydonkey200/neural-symbolic-machines) model (Liang et al., 2018) for weakly-supervised semantic parsing. Specifically, we implement the [memory augmented policy optimization](https://arxiv.org/abs/1807.02322) (MAPO) algorithm for reinforcement learning of semantic parsers on the [WikiTableQuestions](https://nlp.stanford.edu/blog/wikitablequestions-a-complex-real-world-question-understanding-dataset/) environment. This codebase is used in [Yin et al. (2020)](xxx).
